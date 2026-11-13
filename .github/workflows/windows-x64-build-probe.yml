@@ -53,7 +53,7 @@ jobs:
             throw 'No unit test projects were found.'
           }
           $settings = Join-Path $env:RUNNER_TEMP 'windows-x64.runsettings'
-          '<RunSettings><RunConfiguration><TreatNoTestsAsError>true</TreatNoTestsAsError></RunConfiguration></RunSettings>' | Set-Content $settings
+          '<RunSettings><RunConfiguration><TreatNoTestsAsError>true</TreatNoTestsAsError><TestSessionTimeout>120000</TestSessionTimeout></RunConfiguration><MSTest><TestTimeout>30000</TestTimeout></MSTest></RunSettings>' | Set-Content $settings
 
           $failed = @()
           foreach ($project in $testProjects) {
