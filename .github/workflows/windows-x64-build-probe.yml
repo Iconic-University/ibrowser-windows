@@ -37,3 +37,35 @@ jobs:
             exit $LASTEXITCODE
           }
           & $msbuild SafeExamBrowser.sln /verbosity:minimal /property:LangVersion=latest /property:Configuration=Debug /property:Platform=x64
+
+      - name: Run Debug x64 unit tests
+        working-directory: windows
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vstest = & $vswhere -latest -version '[17.0,18.0)' -products '*' -find 'Common7\IDE\CommonExtensions\Microsoft\TestWindow\vstest.console.exe' | Select-Object -First 1
+          if (-not $vstest) {
+            throw 'Visual Studio 2022 VSTest was not found.'
+          }
+
+          $adapter = (Resolve-Path 'packages\MSTest.TestAdapter.4.4.1\buildTransitive\net462').Path
+          $testProjects = Get-ChildItem 'SafeExamBrowser.*.UnitTests\*.csproj' -File
+          if (-not $testProjects) {
+            throw 'No unit test projects were found.'
+          }
+          $settings = Join-Path $env:RUNNER_TEMP 'windows-x64.runsettings'
+          '<RunSettings><RunConfiguration><TreatNoTestsAsError>true</TreatNoTestsAsError></RunConfiguration></RunSettings>' | Set-Content $settings
+
+          $failed = @()
+          foreach ($project in $testProjects) {
+            $assembly = Join-Path $project.DirectoryName "bin\x64\Debug\$($project.BaseName).dll"
+            Write-Host "::group::$($project.BaseName)"
+            & $vstest $assembly /Platform:x64 "/TestAdapterPath:$adapter" "/Settings:$settings" '/Logger:console;Verbosity=detailed'
+            if ($LASTEXITCODE -ne 0) {
+              $failed += $project.BaseName
+            }
+            Write-Host '::endgroup::'
+          }
+
+          if ($failed.Count -gt 0) {
+            throw "Unit test projects with failures: $($failed -join ', ')"
+          }
