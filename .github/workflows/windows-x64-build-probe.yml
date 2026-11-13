@@ -15,7 +15,7 @@ jobs:
     steps:
       - name: Fetch pinned public Windows source
         run: |
-          $sourceSha = 'e5801ae7f8788e2bb36fa58843ef31a691b19b8d'
+          $sourceSha = '780ae837043a7368b19112ee5e84e6df62258347'
           git init windows
           git -C windows remote add origin https://github.com/Iconic-University/ibrowser-windows.git
           git -C windows fetch --depth=1 origin $sourceSha
