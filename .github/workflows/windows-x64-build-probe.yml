@@ -1,0 +1,39 @@
+name: Windows x64 build probe
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Fetch pinned public Windows source
+        run: |
+          $sourceSha = 'ff3f2105b38d511383731dbad2faeab56b74d81d'
+          git init windows
+          git -C windows remote add origin https://github.com/Iconic-University/ibrowser-windows.git
+          git -C windows fetch --depth=1 origin $sourceSha
+          git -C windows checkout --detach FETCH_HEAD
+          if ((git -C windows rev-parse HEAD) -ne $sourceSha) {
+            throw 'Windows source does not match the approved pin.'
+          }
+
+      - name: Restore and compile Debug x64
+        working-directory: windows
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $msbuild = & $vswhere -latest -version '[17.0,18.0)' -products '*' -requires Microsoft.Component.MSBuild -find 'MSBuild\Current\Bin\amd64\MSBuild.exe' | Select-Object -First 1
+          if (-not $msbuild) {
+            throw 'Visual Studio 2022 x64 MSBuild was not found.'
+          }
+          nuget restore SafeExamBrowser.sln -NonInteractive
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
+          & $msbuild SafeExamBrowser.sln /verbosity:minimal /property:LangVersion=latest /property:Configuration=Debug /property:Platform=x64
