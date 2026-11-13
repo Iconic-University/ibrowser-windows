@@ -26,6 +26,7 @@ namespace SafeExamBrowser.Browser.UnitTests.Handlers
 	public class DownloadHandlerTests
 	{
 		private AppConfig appConfig;
+		private string defaultDownloadDirectory;
 		private Mock<ILogger> logger;
 		private BrowserSettings settings;
 		private WindowSettings windowSettings;
@@ -35,11 +36,12 @@ namespace SafeExamBrowser.Browser.UnitTests.Handlers
 		public void Initialize()
 		{
 			appConfig = new AppConfig();
+			defaultDownloadDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
 			logger = new Mock<ILogger>();
 			settings = new BrowserSettings();
 			windowSettings = new WindowSettings();
 
-			sut = new DownloadHandler(appConfig, logger.Object, settings, windowSettings);
+			sut = new DownloadHandler(appConfig, logger.Object, settings, windowSettings, () => defaultDownloadDirectory);
 		}
 
 		[TestMethod]
@@ -123,7 +125,6 @@ namespace SafeExamBrowser.Browser.UnitTests.Handlers
 		public void MustCorrectlyHandleFileDownload()
 		{
 			var callback = new Mock<IBeforeDownloadCallback>();
-			var downloadPath = default(string);
 			var failed = false;
 			var item = new DownloadItem
 			{
@@ -134,9 +135,8 @@ namespace SafeExamBrowser.Browser.UnitTests.Handlers
 			var sync = new AutoResetEvent(false);
 			var threadId = default(int);
 
-			callback.Setup(c => c.Continue(It.IsAny<string>(), It.IsAny<bool>())).Callback<string, bool>((f, s) =>
+			callback.Setup(c => c.Continue(It.IsAny<string>(), It.IsAny<bool>())).Callback(() =>
 			{
-				downloadPath = f;
 				threadId = Thread.CurrentThread.ManagedThreadId;
 				sync.Set();
 			});
@@ -146,9 +146,9 @@ namespace SafeExamBrowser.Browser.UnitTests.Handlers
 			sut.DownloadUpdated += (state) => failed = true;
 
 			sut.OnBeforeDownload(default, default, item, callback.Object);
-			sync.WaitOne();
+			Assert.IsTrue(sync.WaitOne(TimeSpan.FromSeconds(10)), "The download callback was not invoked.");
 
-			callback.Verify(c => c.Continue(It.Is<string>(p => p.Equals(downloadPath)), false), Times.Once);
+			callback.Verify(c => c.Continue(Path.Combine(defaultDownloadDirectory, item.SuggestedFileName), false), Times.Once);
 
 			Assert.IsFalse(failed);
 			Assert.AreNotEqual(Thread.CurrentThread.ManagedThreadId, threadId);
@@ -235,7 +235,7 @@ namespace SafeExamBrowser.Browser.UnitTests.Handlers
 			sut.ConfigurationDownloadRequested += (f, a) => failed = true;
 
 			sut.OnBeforeDownload(default, default, item, callback.Object);
-			sync.WaitOne();
+			Assert.IsTrue(sync.WaitOne(TimeSpan.FromSeconds(10)), "The download callback was not invoked.");
 
 			Assert.IsFalse(failed);
 
@@ -248,7 +248,7 @@ namespace SafeExamBrowser.Browser.UnitTests.Handlers
 
 			item.PercentComplete = 10;
 			sut.OnDownloadUpdated(default, default, item, default);
-			sync.WaitOne();
+			Assert.IsTrue(sync.WaitOne(TimeSpan.FromSeconds(10)), "No download progress update at 10%.");
 
 			Assert.IsFalse(state.IsCancelled);
 			Assert.IsFalse(state.IsComplete);
@@ -257,7 +257,7 @@ namespace SafeExamBrowser.Browser.UnitTests.Handlers
 
 			item.PercentComplete = 20;
 			sut.OnDownloadUpdated(default, default, item, default);
-			sync.WaitOne();
+			Assert.IsTrue(sync.WaitOne(TimeSpan.FromSeconds(10)), "No download progress update at 20%.");
 
 			Assert.IsFalse(state.IsCancelled);
 			Assert.IsFalse(state.IsComplete);
@@ -267,7 +267,7 @@ namespace SafeExamBrowser.Browser.UnitTests.Handlers
 			item.PercentComplete = 50;
 			item.IsCancelled = true;
 			sut.OnDownloadUpdated(default, default, item, default);
-			sync.WaitOne();
+			Assert.IsTrue(sync.WaitOne(TimeSpan.FromSeconds(10)), "No download progress update at 50%.");
 
 			Assert.IsFalse(failed);
 			Assert.IsTrue(state.IsCancelled);

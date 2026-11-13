@@ -27,6 +27,7 @@ namespace SafeExamBrowser.Browser.Handlers
 		private readonly AppConfig appConfig;
 		private readonly ConcurrentDictionary<int, DownloadFinishedCallback> callbacks;
 		private readonly ConcurrentDictionary<int, Guid> downloads;
+		private readonly Func<string> getDefaultDownloadDirectory;
 		private readonly ILogger logger;
 		private readonly BrowserSettings settings;
 		private readonly WindowSettings windowSettings;
@@ -35,11 +36,17 @@ namespace SafeExamBrowser.Browser.Handlers
 		internal event DownloadAbortedEventHandler DownloadAborted;
 		internal event DownloadUpdatedEventHandler DownloadUpdated;
 
-		internal DownloadHandler(AppConfig appConfig, ILogger logger, BrowserSettings settings, WindowSettings windowSettings)
+		internal DownloadHandler(
+			AppConfig appConfig,
+			ILogger logger,
+			BrowserSettings settings,
+			WindowSettings windowSettings,
+			Func<string> getDefaultDownloadDirectory = null)
 		{
 			this.appConfig = appConfig;
 			this.callbacks = new ConcurrentDictionary<int, DownloadFinishedCallback>();
 			this.downloads = new ConcurrentDictionary<int, Guid>();
+			this.getDefaultDownloadDirectory = getDefaultDownloadDirectory ?? (() => KnownFolders.Downloads.ExpandedPath);
 			this.logger = logger;
 			this.settings = settings;
 			this.windowSettings = windowSettings;
@@ -139,7 +146,7 @@ namespace SafeExamBrowser.Browser.Handlers
 			}
 			else
 			{
-				filePath = Path.Combine(KnownFolders.Downloads.ExpandedPath, downloadItem.SuggestedFileName);
+				filePath = Path.Combine(getDefaultDownloadDirectory(), downloadItem.SuggestedFileName);
 			}
 
 			if (File.Exists(filePath))
