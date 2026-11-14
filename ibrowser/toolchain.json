@@ -1,0 +1,71 @@
+{
+  "upstream": {
+    "tag": "v3.10.3",
+    "commit": "ebe28a2553894a5f67d8c69175679f4ca832f73b"
+  },
+  "inventoriedForkCommit": "2ad50e06f9bcef053e9fa773a8939a9484059081",
+  "solution": {
+    "path": "SafeExamBrowser.sln",
+    "visualStudioVersionMetadata": "17.5.33414.496",
+    "configurations": ["Debug|x64", "Debug|x86", "Release|x64", "Release|x86"],
+    "managedTargetFramework": "net48",
+    "installerTargets": {
+      "Setup": ["Release|x64", "Release|x86"],
+      "SetupBundle": ["Release|x86"]
+    }
+  },
+  "debugProbe": {
+    "workflow": ".github/workflows/windows-x64-build-probe.yml",
+    "runner": "windows-2022",
+    "shell": "pwsh",
+    "visualStudio": "2022",
+    "msbuildVersionRange": "[17.0,18.0)",
+    "msbuildArchitecture": "x64",
+    "configuration": "Debug",
+    "platform": "x64",
+    "langVersion": "latest",
+    "restoreCommand": "nuget restore SafeExamBrowser.sln -NonInteractive",
+    "buildCommand": "& $msbuild SafeExamBrowser.sln /verbosity:minimal /property:LangVersion=latest /property:Configuration=Debug /property:Platform=x64",
+    "targetingPack": ".NET Framework 4.8",
+    "runtime": ".NET Framework 4.8"
+  },
+  "packages": {
+    "manifests": "*/packages.config",
+    "packageReferenceProject": "SafeExamBrowser.SystemComponents/SafeExamBrowser.SystemComponents.csproj",
+    "observedPublicFeed": "https://api.nuget.org/v3/index.json",
+    "keyPins": {
+      "CefSharp.Common": "152.0.100",
+      "CefSharp.WinForms": "152.0.100",
+      "chromiumembeddedframework.runtime.win-arm64": "152.0.10",
+      "chromiumembeddedframework.runtime.win-x64": "152.0.10",
+      "chromiumembeddedframework.runtime.win-x86": "152.0.10",
+      "Microsoft.Windows.SDK.Contracts": "10.0.28000.2705",
+      "MSTest.TestAdapter": "4.4.1",
+      "MSTest.TestFramework": "4.4.1",
+      "Moq": "4.21.0",
+      "OpenCover": "4.7.1221"
+    }
+  },
+  "installer": {
+    "appVeyor": "appveyor-release.yml",
+    "msiProject": "Setup/Setup.wixproj",
+    "bundleProject": "SetupBundle/SetupBundle.wixproj",
+    "wixMinimum": "3.11",
+    "wixTargetsLayout": "Microsoft\\WiX\\v3.x\\Wix.targets",
+    "platformOrder": ["x64", "x86"],
+    "windowsSdkTool": "signtool.exe",
+    "dotNetFrameworkPayload": "4.8 web installer",
+    "visualCppRedistributablePayload": "14.44.35211.0",
+    "integrityModulePath": "C:\\SEB\\seb_$(PlatformName).dll"
+  },
+  "historicalDebugEvidence": {
+    "run": "https://github.com/Iconic-University/ibrowser-windows/actions/runs/43458510798",
+    "workflowCommit": "35fa4312dfd2ae035c26c55749b62731a3fca855",
+    "compiledSourceCommit": "780ae837043a7368b19112ee5e84e6df62258347",
+    "runnerImageVersion": "20261112.366.7",
+    "msbuildVersion": "17.14.60+43b635718",
+    "vsTestVersion": "17.14.0",
+    "testSuites": 11,
+    "testsPassed": 720
+  }
+}
