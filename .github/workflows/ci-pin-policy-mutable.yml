@@ -1,0 +1,16 @@
+name: CI pin policy mutable control
+on:
+  pull_request:
+    branches: [codex/p04-05-policy-probe-base]
+    paths: [.github/workflows/ci-pin-policy-mutable.yml]
+permissions:
+  contents: read
+jobs:
+  mutable:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - run: test -d .git
