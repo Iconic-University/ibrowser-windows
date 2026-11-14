@@ -1,0 +1,46 @@
+name: Public CI isolation probe
+on:
+  pull_request:
+    branches: [codex/p04-05-isolation-base]
+    paths: [.github/workflows/public-ci-isolation-probe.yml]
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Verify credential and repository scope
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MARKER_PRESENT: ${{ secrets.PUBLIC_CI_SYNTHETIC_MARKER != '' }}
+          MARKER_EXPECTED: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+        run: |
+          set -euo pipefail
+          test "$MARKER_PRESENT" = "$MARKER_EXPECTED"
+          echo "Synthetic marker presence matched the PR origin: $MARKER_PRESENT"
+          for name in ACTIONS_ID_TOKEN_REQUEST_URL ACTIONS_ID_TOKEN_REQUEST_TOKEN \
+            AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN \
+            AZURE_CLIENT_SECRET GOOGLE_APPLICATION_CREDENTIALS SIGNING_KEY PRIVATE_SOURCE_SSH_KEY; do
+            test -z "${!name-}"
+          done
+          echo 'OIDC request and selected credential variables are absent.'
+          test -z "$(find "$GITHUB_WORKSPACE" -mindepth 1 -print -quit)"
+          echo 'Runner workspace contains no checkout.'
+          curl --disable --fail --silent --show-error --max-time 15 \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            "$GITHUB_API_URL/installation/repositories?per_page=2" | \
+            jq --exit-status --arg repository "$GITHUB_REPOSITORY" \
+              '.total_count == 1 and .repositories[0].full_name == $repository and .repositories[0].private == false' \
+              >/dev/null
+          echo 'Job token installation is scoped to this public repository alone.'
+      - name: Write inert test fixture
+        run: printf '%s\n' 'synthetic public CI isolation fixture' > "$RUNNER_TEMP/public-ci-isolation.txt"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: public-ci-isolation-fixture
+          path: ${{ runner.temp }}/public-ci-isolation.txt
+          retention-days: 1
+          if-no-files-found: error
