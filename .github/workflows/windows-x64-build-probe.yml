@@ -15,7 +15,7 @@ jobs:
     steps:
       - name: Fetch pinned public Windows source
         run: |
-          $sourceSha = '780ae837043a7368b19112ee5e84e6df62258347'
+          $sourceSha = '0c335a3716bbbc922808ca998e5e2a7fd10b79c2'
           git init windows
           git -C windows remote add origin https://github.com/Iconic-University/ibrowser-windows.git
           git -C windows fetch --depth=1 origin $sourceSha
@@ -23,6 +23,7 @@ jobs:
           if ((git -C windows rev-parse HEAD) -ne $sourceSha) {
             throw 'Windows source does not match the approved pin.'
           }
+          Write-Host "Verified Windows source: $sourceSha"
 
       - name: Restore and compile Debug x64
         working-directory: windows
